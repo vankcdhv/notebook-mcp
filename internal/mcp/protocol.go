@@ -2,12 +2,11 @@ package mcp
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"strconv"
-	"strings"
 )
 
 const protocolVersion = "2024-11-05"
@@ -45,27 +44,24 @@ type responseError struct {
 }
 
 func (s *Server) Serve(ctx context.Context, in io.Reader, out io.Writer) error {
-	reader := bufio.NewReader(in)
+	scanner := bufio.NewScanner(in)
+	scanner.Buffer(make([]byte, 1024*1024), 16*1024*1024)
 	writer := bufio.NewWriter(out)
 	defer writer.Flush()
 
-	for {
+	for scanner.Scan() {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
 
-		message, err := readMessage(reader)
-		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			_ = writeMessage(writer, errorResponse(nil, -32700, "parse error"))
+		line := bytes.TrimSpace(scanner.Bytes())
+		if len(line) == 0 {
 			continue
 		}
 		var req request
-		if err := json.Unmarshal(message, &req); err != nil {
+		if err := json.Unmarshal(line, &req); err != nil {
 			_ = writeMessage(writer, errorResponse(nil, -32700, "parse error"))
 			continue
 		}
@@ -77,37 +73,10 @@ func (s *Server) Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 			return err
 		}
 	}
-}
-
-func readMessage(reader *bufio.Reader) ([]byte, error) {
-	contentLength := -1
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			return nil, err
-		}
-		line = strings.TrimRight(line, "\r\n")
-		if line == "" {
-			break
-		}
-		name, value, ok := strings.Cut(line, ":")
-		if !ok {
-			continue
-		}
-		if strings.EqualFold(strings.TrimSpace(name), "Content-Length") {
-			parsed, err := strconv.Atoi(strings.TrimSpace(value))
-			if err != nil {
-				return nil, err
-			}
-			contentLength = parsed
-		}
+	if err := scanner.Err(); err != nil {
+		return err
 	}
-	if contentLength < 0 {
-		return nil, fmt.Errorf("missing Content-Length")
-	}
-	message := make([]byte, contentLength)
-	_, err := io.ReadFull(reader, message)
-	return message, err
+	return nil
 }
 
 func writeMessage(writer *bufio.Writer, resp response) error {
@@ -115,10 +84,10 @@ func writeMessage(writer *bufio.Writer, resp response) error {
 	if err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintf(writer, "Content-Length: %d\r\n\r\n", len(payload)); err != nil {
+	if _, err := writer.Write(payload); err != nil {
 		return err
 	}
-	if _, err := writer.Write(payload); err != nil {
+	if err := writer.WriteByte('\n'); err != nil {
 		return err
 	}
 	return writer.Flush()

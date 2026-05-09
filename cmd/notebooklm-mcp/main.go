@@ -18,6 +18,21 @@ import (
 
 const version = "0.1.0"
 
+const usage = `notebooklm-mcp — MCP stdio server for Google NotebookLM
+
+Usage:
+  notebooklm-mcp                  Run the MCP stdio server (default; reads JSON-RPC from stdin).
+  notebooklm-mcp setup [--yes]    First-time setup: install Playwright browser if needed, then login.
+  notebooklm-mcp install-browsers Install Playwright browser only.
+  notebooklm-mcp login            Interactive Google login via Playwright.
+  notebooklm-mcp login --cookie "SID=...; HSID=...; ..."
+                                  Import a Cookie header instead of using the browser flow.
+  notebooklm-mcp version          Print the version.
+  notebooklm-mcp --help           Show this help.
+
+Profile lives at ~/.notebooklm-mcp/ (override with NOTEBOOKLM_MCP_PROFILE).
+`
+
 func runSetup(ctx context.Context, authManager *auth.Manager, yes bool) error {
 	if err := ensurePlaywrightBrowsers(yes); err != nil {
 		return err
@@ -109,6 +124,12 @@ func main() {
 		case "version":
 			fmt.Println(version)
 			return
+		case "--help", "-h", "help":
+			fmt.Fprint(os.Stderr, usage)
+			return
+		default:
+			fmt.Fprintf(os.Stderr, "unknown command: %s\n\n%s", os.Args[1], usage)
+			os.Exit(2)
 		}
 	}
 
