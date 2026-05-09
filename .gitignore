@@ -1,0 +1,6 @@
+/notebooklm-mcp
+*.test
+.DS_Store
+/dist/
+/coverage.out
+/docs/superpowers/
