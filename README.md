@@ -46,21 +46,22 @@ So your agent gets *evidence*, not a paraphrase.
 
 ## Quick start
 
+One-liner — installs the latest release into `~/.notebooklm-mcp/bin/notebooklm-mcp` and prints the next steps:
+
 ```bash
-# 1. Build
-git clone <this-repo> && cd notebooklm-mcp-go
-go build ./cmd/notebooklm-mcp
-
-# 2. First-time setup (installs Playwright browser if missing, opens Google login)
-./notebooklm-mcp setup
-
-# 3. Register with Claude Code, scope = user (global)
-claude mcp add -s user notebooklm-mcp $(pwd)/notebooklm-mcp
-
-# 4. Restart Claude Code → tools show up under `notebooklm-mcp`
+curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh
 ```
 
-That's it. Skip to [Usage](#usage-from-an-ai-agent) or read on for details.
+Then follow the printed instructions:
+
+```bash
+~/.notebooklm-mcp/bin/notebooklm-mcp setup
+claude mcp add -s user notebooklm-mcp ~/.notebooklm-mcp/bin/notebooklm-mcp
+```
+
+Restart Claude Code → tools show up under `notebooklm-mcp`. **To update later, re-run the same `curl ... | sh` command** — it always pulls the latest release.
+
+Skip to [Usage](#usage-from-an-ai-agent) or read on for details.
 
 ---
 
@@ -75,22 +76,52 @@ That's it. Skip to [Usage](#usage-from-an-ai-agent) or read on for details.
 
 ## Install
 
-### Option A — build from source
+### Option A — install script (recommended, Linux + macOS)
 
 ```bash
-git clone <this-repo>
-cd notebooklm-mcp-go
-go build ./cmd/notebooklm-mcp
+curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh
 ```
 
-You'll get a `notebooklm-mcp` binary in the project root.
+What it does:
+- detects your OS + arch
+- resolves the latest release tag from GitHub
+- downloads the matching archive
+- verifies its SHA-256 against `checksums.txt`
+- installs the binary to `~/.notebooklm-mcp/bin/notebooklm-mcp` (mode `0755`)
+- on macOS, strips the quarantine xattr so Gatekeeper won't block it
+- prints the next-step `setup` and `claude mcp add` commands
 
-### Option B — install to `$PATH`
+Pin a specific version:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh -s -- v0.1.2
+```
+
+Override install directory:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh \
+  | NOTEBOOKLM_MCP_INSTALL_DIR=/usr/local/bin sh
+```
+
+**Updating** — re-run the same command. The script always replaces the existing binary with the latest release.
+
+### Option B — `go install`
 
 ```bash
 go install github.com/vankcdhv/notebook-mcp/cmd/notebooklm-mcp@latest
-# or, after building locally:
-sudo install -m 755 ./notebooklm-mcp /usr/local/bin/notebooklm-mcp
+```
+
+### Option C — manual download
+
+Grab the archive matching your platform from [Releases](https://github.com/vankcdhv/notebook-mcp/releases), extract, drop the binary somewhere on your `PATH`. Verify against `checksums.txt`.
+
+### Option D — build from source
+
+```bash
+git clone https://github.com/vankcdhv/notebook-mcp
+cd notebook-mcp
+go build -o notebooklm-mcp ./cmd/notebooklm-mcp
 ```
 
 ### macOS Gatekeeper
