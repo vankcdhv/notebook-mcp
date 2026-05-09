@@ -93,6 +93,22 @@ go install github.com/vanlt/notebooklm-mcp-go/cmd/notebooklm-mcp@latest
 sudo install -m 755 ./notebooklm-mcp /usr/local/bin/notebooklm-mcp
 ```
 
+### macOS Gatekeeper
+
+Release binaries are unsigned. If macOS shows:
+
+> Apple could not verify “notebooklm-mcp” is free of malware that may harm your Mac or compromise your privacy.
+
+remove the quarantine attribute after extracting the archive:
+
+```bash
+xattr -dr com.apple.quarantine ./notebooklm-mcp
+chmod +x ./notebooklm-mcp
+./notebooklm-mcp version
+```
+
+Only do this for a binary you downloaded from this repository's official GitHub Releases page. You can also verify the archive against `checksums.txt` from the same release.
+
 ---
 
 ## First-time setup
