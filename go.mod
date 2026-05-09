@@ -1,4 +1,4 @@
-module github.com/vanlt/notebooklm-mcp-go
+module github.com/vankcdhv/notebook-mcp
 
 go 1.26
 

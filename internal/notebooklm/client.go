@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/vanlt/notebooklm-mcp-go/internal/rpc"
+	"github.com/vankcdhv/notebook-mcp/internal/rpc"
 )
 
 type RPC interface {

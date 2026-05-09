@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/vanlt/notebooklm-mcp-go/internal/auth"
+	"github.com/vankcdhv/notebook-mcp/internal/auth"
 )
 
 type AuthProvider interface {

@@ -88,7 +88,7 @@ You'll get a `notebooklm-mcp` binary in the project root.
 ### Option B — install to `$PATH`
 
 ```bash
-go install github.com/vanlt/notebooklm-mcp-go/cmd/notebooklm-mcp@latest
+go install github.com/vankcdhv/notebook-mcp/cmd/notebooklm-mcp@latest
 # or, after building locally:
 sudo install -m 755 ./notebooklm-mcp /usr/local/bin/notebooklm-mcp
 ```

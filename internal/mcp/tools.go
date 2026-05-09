@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/vanlt/notebooklm-mcp-go/internal/notebooklm"
+	"github.com/vankcdhv/notebook-mcp/internal/notebooklm"
 )
 
 type NotebookLMClient interface {

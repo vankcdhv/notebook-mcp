@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/playwright-community/playwright-go"
-	"github.com/vanlt/notebooklm-mcp-go/internal/auth"
-	"github.com/vanlt/notebooklm-mcp-go/internal/mcp"
-	"github.com/vanlt/notebooklm-mcp-go/internal/notebooklm"
-	"github.com/vanlt/notebooklm-mcp-go/internal/rpc"
+	"github.com/vankcdhv/notebook-mcp/internal/auth"
+	"github.com/vankcdhv/notebook-mcp/internal/mcp"
+	"github.com/vankcdhv/notebook-mcp/internal/notebooklm"
+	"github.com/vankcdhv/notebook-mcp/internal/rpc"
 )
 
 const version = "0.1.0"

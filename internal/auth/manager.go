@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/playwright-community/playwright-go"
-	"github.com/vanlt/notebooklm-mcp-go/internal/store"
+	"github.com/vankcdhv/notebook-mcp/internal/store"
 	"golang.org/x/net/publicsuffix"
 )
 

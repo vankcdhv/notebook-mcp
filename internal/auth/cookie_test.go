@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/vanlt/notebooklm-mcp-go/internal/store"
+	"github.com/vankcdhv/notebook-mcp/internal/store"
 )
 
 func TestImportCookieHeader(t *testing.T) {
