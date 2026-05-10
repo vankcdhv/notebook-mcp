@@ -16,7 +16,7 @@ import (
 	"github.com/vankcdhv/notebook-mcp/internal/rpc"
 )
 
-const version = "0.2.0"
+const version = "0.2.1"
 
 const usage = `notebooklm-mcp — MCP stdio server for Google NotebookLM
 

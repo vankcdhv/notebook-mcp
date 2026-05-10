@@ -3,7 +3,7 @@
 #
 # Usage:
 #   curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh
-#   curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh -s -- v0.1.2
+#   curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh -s -- v0.2.0
 #
 # Re-running this script upgrades to the latest release.
 #
@@ -47,7 +47,10 @@ if [ "$VERSION" = "latest" ]; then
 fi
 VERSION="${VERSION#v}"
 
-ARCHIVE="${BIN_NAME}_${VERSION}_${OS}_${ARCH}.tar.gz"
+case "$OS" in
+  linux|darwin) ARCHIVE="${BIN_NAME}_${VERSION}_${OS}_${ARCH}.tar.gz" ;;
+  *) err "unsupported OS: $OS" ;;
+esac
 DOWNLOAD_URL="https://github.com/$REPO/releases/download/v${VERSION}/${ARCHIVE}"
 CHECKSUMS_URL="https://github.com/$REPO/releases/download/v${VERSION}/checksums.txt"
 
@@ -83,7 +86,9 @@ SRC="$TMP/$BIN_NAME"
 [ -f "$SRC" ] || err "binary not found in archive"
 
 mkdir -p "$INSTALL_DIR"
-chmod 700 "$(dirname "$INSTALL_DIR")" 2>/dev/null || true
+if [ "${INSTALL_DIR#"$HOME/.notebooklm-mcp"}" != "$INSTALL_DIR" ]; then
+  chmod 700 "$HOME/.notebooklm-mcp" 2>/dev/null || true
+fi
 install -m 755 "$SRC" "$INSTALL_DIR/$BIN_NAME"
 
 # --- strip macOS quarantine ---

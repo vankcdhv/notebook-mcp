@@ -98,7 +98,7 @@ What it does:
 Pin a specific version:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh -s -- v0.2.0
+curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh -s -- v0.2.1
 ```
 
 Override install directory:
@@ -106,6 +106,13 @@ Override install directory:
 ```bash
 curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh \
   | NOTEBOOKLM_MCP_INSTALL_DIR=/usr/local/bin sh
+```
+
+On Linux, installing to system directories such as `/usr/local/bin` may require privileges:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh \
+  | sudo NOTEBOOKLM_MCP_INSTALL_DIR=/usr/local/bin sh
 ```
 
 **Updating** — re-run the same command. The script always replaces the existing binary with the latest release.
