@@ -80,10 +80,18 @@ Skip to [Usage](#usage-from-an-ai-agent) or read on for details.
 
 ## Install
 
-### Option A — install script (recommended, Linux + macOS)
+### Option A — install script (recommended)
+
+Linux/macOS:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh
+```
+
+Windows PowerShell:
+
+```powershell
+iwr -useb https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.ps1 | iex
 ```
 
 What it does:
@@ -98,7 +106,11 @@ What it does:
 Pin a specific version:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh -s -- v0.2.1
+curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh -s -- v0.2.2
+```
+
+```powershell
+$env:NOTEBOOKLM_MCP_VERSION="v0.2.2"; iwr -useb https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.ps1 | iex
 ```
 
 Override install directory:
@@ -113,6 +125,12 @@ On Linux, installing to system directories such as `/usr/local/bin` may require 
 ```bash
 curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh \
   | sudo NOTEBOOKLM_MCP_INSTALL_DIR=/usr/local/bin sh
+```
+
+On Windows:
+
+```powershell
+$env:NOTEBOOKLM_MCP_INSTALL_DIR="$env:USERPROFILE\bin"; iwr -useb https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.ps1 | iex
 ```
 
 **Updating** — re-run the same command. The script always replaces the existing binary with the latest release.
