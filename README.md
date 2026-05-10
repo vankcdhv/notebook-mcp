@@ -37,9 +37,13 @@ So your agent gets *evidence*, not a paraphrase.
 | `notebook_get` | Notebook + summary + sources in one call |
 | `notebook_create` | Create a new notebook |
 | `source_list` | List sources in a notebook |
-| `source_add` | Add a URL or text source (`type: "url"` or `"text"`) |
+| `source_add` | Add a source (`type: "url"`, `"youtube"`, `"text"`, `"drive"`, or `"file"`) |
 | `source_delete` | Remove a source |
+| `note_list` / `note_get` | Read notebook notes |
+| `note_create` / `note_update` / `note_delete` | Manage notebook notes |
+| `research_start` / `research_poll` / `research_import` | Run web/Drive research and import selected results |
 | `ask` | Blocking chat against a notebook (optionally scoped to `source_ids`, with `conversation_id` for follow-ups) |
+| `ask_stream` | Chat response with structured chunks plus final answer; live MCP progress notifications are not emitted |
 | `knowledge_search` | Citation-backed snippets — query → references → fulltext → exact quote + context window |
 
 ---
@@ -94,7 +98,7 @@ What it does:
 Pin a specific version:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh -s -- v0.1.2
+curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh -s -- v0.2.0
 ```
 
 Override install directory:
@@ -240,9 +244,22 @@ Same config shape — point `command` at the binary, no args needed for the stdi
 Once registered, you can prompt your agent naturally and it will pick the right tool. Examples:
 
 - *"List my NotebookLM notebooks."* → `notebook_list`
-- *"Add https://example.com/article to notebook AIClass."* → `source_add`
+- *"Add https://example.com/article to notebook AIClass."* → `source_add` with `type: "url"`
+- *"Upload ./paper.pdf into AIClass."* → `source_add` with `type: "file"`
+- *"Create a note in AIClass from this summary."* → `note_create`
+- *"Research recent clustering papers and import the best links."* → `research_start` → `research_poll` → `research_import`
 - *"What does my AIClass notebook say about clustering? I need exact quotes."* → `knowledge_search`
-- *"Ask AIClass: how does k-means initialise centroids?"* → `ask`
+- *"Ask AIClass: how does k-means initialise centroids?"* → `ask` or `ask_stream`
+
+`source_add` accepts these type-specific arguments:
+
+| Type | Required args |
+|---|---|
+| `url` | `notebook_id`, `url` |
+| `youtube` | `notebook_id`, `url` |
+| `text` | `notebook_id`, `content` (`title` optional) |
+| `drive` | `notebook_id`, `file_id`, `title` (`mime_type` optional) |
+| `file` | `notebook_id`, `file_path` (`mime_type` optional) |
 
 `knowledge_search` is the one to lean on when you don't want the agent inventing details. Sample shape:
 

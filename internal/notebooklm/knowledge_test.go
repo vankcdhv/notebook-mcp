@@ -31,6 +31,14 @@ func (f *fakeKnowledgeRPC) Ask(ctx context.Context, notebookID, question string,
 	return "answer", "conv-1", []rpc.ChatReference{{SourceID: "source-1", CitedText: "exact quoted text"}}, nil
 }
 
+func (f *fakeKnowledgeRPC) AskStream(ctx context.Context, notebookID, question string, sourceIDs []string, conversationID string) ([]rpc.ChatChunk, string, []rpc.ChatReference, error) {
+	return []rpc.ChatChunk{{Seq: 1, Text: "answer", IsFinal: true}}, "conv-1", nil, nil
+}
+
+func (f *fakeKnowledgeRPC) UploadFile(ctx context.Context, notebookID, sourceID, filePath, mimeType string) error {
+	return nil
+}
+
 func TestGetSourceFulltextExtractsContent(t *testing.T) {
 	client := New(&fakeKnowledgeRPC{})
 	fulltext, err := client.GetSourceFulltext(context.Background(), "nb", "source-1")

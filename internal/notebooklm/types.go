@@ -18,6 +18,20 @@ type Source struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 }
 
+type Note struct {
+	ID      string `json:"id"`
+	Title   string `json:"title,omitempty"`
+	Content string `json:"content,omitempty"`
+}
+
+type ResearchResult struct {
+	TaskID string `json:"task_id,omitempty"`
+	Status string `json:"status,omitempty"`
+	Title  string `json:"title,omitempty"`
+	URL    string `json:"url,omitempty"`
+	Type   string `json:"type,omitempty"`
+}
+
 type ChatReference struct {
 	SourceID  string `json:"source_id"`
 	CitedText string `json:"cited_text,omitempty"`
@@ -31,6 +45,19 @@ type AskResult struct {
 	ConversationID string          `json:"conversation_id,omitempty"`
 	References     []ChatReference `json:"references,omitempty"`
 	Warning        string          `json:"warning,omitempty"`
+}
+
+type AskChunk struct {
+	Seq     int    `json:"seq"`
+	Text    string `json:"text"`
+	IsFinal bool   `json:"is_final"`
+}
+
+type AskStreamResult struct {
+	Answer         string          `json:"answer"`
+	ConversationID string          `json:"conversation_id,omitempty"`
+	References     []ChatReference `json:"references,omitempty"`
+	Chunks         []AskChunk      `json:"chunks"`
 }
 
 type SourceFulltext struct {
