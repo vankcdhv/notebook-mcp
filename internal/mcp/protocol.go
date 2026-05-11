@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -48,6 +49,7 @@ func (s *Server) Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 	reader := bufio.NewReader(in)
 	writer := bufio.NewWriter(out)
 	defer writer.Flush()
+	useFraming := false
 
 	for {
 		select {
@@ -56,30 +58,59 @@ func (s *Server) Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 		default:
 		}
 
-		body, err := readMessage(reader)
+		body, framed, err := readMessage(reader)
 		if err == io.EOF {
 			return nil
 		}
 		if err != nil {
 			return err
 		}
+		if framed {
+			useFraming = true
+		}
 
 		var req request
 		if err := json.Unmarshal(body, &req); err != nil {
-			_ = writeMessage(writer, errorResponse(nil, -32700, "parse error"))
+			_ = writeMessage(writer, errorResponse(nil, -32700, "parse error"), useFraming)
 			continue
 		}
 		if req.ID == nil {
 			_ = s.handleNotification(ctx, req)
 			continue
 		}
-		if err := writeMessage(writer, s.handleRequest(ctx, req)); err != nil {
+		if err := writeMessage(writer, s.handleRequest(ctx, req), useFraming); err != nil {
 			return err
 		}
 	}
 }
 
-func readMessage(reader *bufio.Reader) ([]byte, error) {
+func readMessage(reader *bufio.Reader) ([]byte, bool, error) {
+	for {
+		b, err := reader.Peek(1)
+		if err != nil {
+			return nil, false, err
+		}
+		switch b[0] {
+		case '\n', '\r':
+			if _, err := reader.ReadByte(); err != nil {
+				return nil, false, err
+			}
+			continue
+		case '{', '[':
+			line, err := reader.ReadBytes('\n')
+			if err != nil && len(line) == 0 {
+				return nil, false, err
+			}
+			body := bytes.TrimRight(line, "\r\n")
+			return body, false, nil
+		default:
+			body, err := readContentLengthMessage(reader)
+			return body, true, err
+		}
+	}
+}
+
+func readContentLengthMessage(reader *bufio.Reader) ([]byte, error) {
 	contentLength := -1
 	for {
 		line, err := reader.ReadString('\n')
@@ -112,15 +143,24 @@ func readMessage(reader *bufio.Reader) ([]byte, error) {
 	return body, nil
 }
 
-func writeMessage(writer *bufio.Writer, resp response) error {
+func writeMessage(writer *bufio.Writer, resp response, framed bool) error {
 	payload, err := json.Marshal(resp)
 	if err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintf(writer, "Content-Length: %d\r\n\r\n", len(payload)); err != nil {
-		return err
+	if framed {
+		if _, err := fmt.Fprintf(writer, "Content-Length: %d\r\n\r\n", len(payload)); err != nil {
+			return err
+		}
+		if _, err := writer.Write(payload); err != nil {
+			return err
+		}
+		return writer.Flush()
 	}
 	if _, err := writer.Write(payload); err != nil {
+		return err
+	}
+	if err := writer.WriteByte('\n'); err != nil {
 		return err
 	}
 	return writer.Flush()

@@ -58,6 +58,29 @@ func TestServerServeRejectsMalformedFrame(t *testing.T) {
 	}
 }
 
+func TestServerServeReadsNewlineDelimitedRequests(t *testing.T) {
+	server := &Server{Name: "test-server", Version: "test-version"}
+	input := `{"jsonrpc":"2.0","id":1,"method":"initialize"}` + "\n"
+	var output bytes.Buffer
+
+	if err := server.Serve(context.Background(), strings.NewReader(input), &output); err != nil {
+		t.Fatalf("Serve returned error: %v", err)
+	}
+
+	trimmed := strings.TrimRight(output.String(), "\n")
+	if strings.HasPrefix(trimmed, "Content-Length") {
+		t.Fatalf("expected newline framing, got Content-Length response: %q", trimmed)
+	}
+	var resp map[string]any
+	if err := json.Unmarshal([]byte(trimmed), &resp); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	result := resp["result"].(map[string]any)
+	if result["protocolVersion"] != protocolVersion {
+		t.Fatalf("protocolVersion = %v, want %v", result["protocolVersion"], protocolVersion)
+	}
+}
+
 func framedJSON(payload string) string {
 	return fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(payload), payload)
 }

@@ -106,11 +106,11 @@ What it does:
 Pin a specific version:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh -s -- v0.2.2
+curl -sSL https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.sh | sh -s -- v0.2.3
 ```
 
 ```powershell
-$env:NOTEBOOKLM_MCP_VERSION="v0.2.2"; iwr -useb https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.ps1 | iex
+$env:NOTEBOOKLM_MCP_VERSION="v0.2.3"; iwr -useb https://raw.githubusercontent.com/vankcdhv/notebook-mcp/main/install.ps1 | iex
 ```
 
 Override install directory:
