@@ -70,11 +70,14 @@ func parseNote(data any) Note {
 
 func parseResearchResult(data any) ResearchResult {
 	arr := asArray(data)
-	status := "in_progress"
-	if asInt(at(arr, 0)) == 2 || asInt(at(arr, 0)) == 6 {
-		status = "completed"
+	return ResearchResult{TaskID: asString(at(arr, 0)), Status: researchStatus(asInt(at(arr, 0))), Title: asString(at(arr, 1)), URL: asString(at(arr, 2))}
+}
+
+func researchStatus(code int) string {
+	if code == 2 || code == 6 {
+		return "completed"
 	}
-	return ResearchResult{TaskID: asString(at(arr, 0)), Status: status, Title: asString(at(arr, 1)), URL: asString(at(arr, 2))}
+	return "in_progress"
 }
 
 func extractSourceURL(metadata []any) string {

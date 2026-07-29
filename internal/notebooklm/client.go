@@ -167,8 +167,20 @@ func (c *Client) ListNotes(ctx context.Context, notebookID string) ([]Note, erro
 	if err != nil {
 		return nil, err
 	}
+	// The payload is [[[id, note], ...], timestamp]: notes sit one level in, and
+	// each entry repeats its ID before the note body itself.
+	entries := asArray(result)
+	if len(entries) > 0 {
+		if nested := asArray(entries[0]); len(nested) > 0 {
+			entries = nested
+		}
+	}
 	notes := []Note{}
-	for _, item := range asArray(result) {
+	for _, entry := range entries {
+		item := entry
+		if pair := asArray(entry); len(pair) > 1 && len(asArray(pair[1])) > 0 {
+			item = pair[1]
+		}
 		note := parseNote(item)
 		if note.ID != "" {
 			notes = append(notes, note)
@@ -244,10 +256,26 @@ func (c *Client) PollResearch(ctx context.Context, notebookID string) ([]Researc
 	if err != nil {
 		return nil, err
 	}
+	// Payload is [[[taskID, task, ...], ...]] where task is
+	// [notebookID, [query, sourceType], _, [[[url, title, snippet], ...]], status].
+	tasks := asArray(result)
+	if len(tasks) > 0 {
+		tasks = asArray(tasks[0])
+	}
 	items := []ResearchResult{}
-	for _, item := range asArray(result) {
-		if r := parseResearchResult(item); r.TaskID != "" || r.Title != "" {
-			items = append(items, r)
+	for _, task := range tasks {
+		taskArr := asArray(task)
+		taskID := asString(at(taskArr, 0))
+		data := asArray(at(taskArr, 1))
+		status := researchStatus(asInt(at(data, 4)))
+		for _, found := range asArray(at(asArray(at(data, 3)), 0)) {
+			entry := asArray(found)
+			url := asString(at(entry, 0))
+			title := asString(at(entry, 1))
+			if url == "" && title == "" {
+				continue
+			}
+			items = append(items, ResearchResult{TaskID: taskID, Status: status, Title: title, URL: url})
 		}
 	}
 	return items, nil
