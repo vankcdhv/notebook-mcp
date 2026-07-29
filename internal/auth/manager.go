@@ -21,6 +21,10 @@ import (
 
 const homeURL = "https://notebooklm.google.com/"
 
+// Google serves a stripped-down page without the bootstrap tokens when the
+// request does not look like it came from a real browser.
+const UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+
 type Manager struct {
 	Store      *store.Store
 	HTTPClient *http.Client
@@ -182,6 +186,9 @@ func (m *Manager) RefreshTokens(ctx context.Context) (Tokens, error) {
 	if err != nil {
 		return Tokens{}, err
 	}
+	req.Header.Set("User-Agent", UserAgent)
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	res, err := m.HTTPClient.Do(req)
 	if err != nil {
 		return Tokens{}, err
@@ -200,9 +207,25 @@ func (m *Manager) RefreshTokens(ctx context.Context) (Tokens, error) {
 	return ExtractTokens(string(body))
 }
 
+// installCookies groups cookies by their own domain before handing them to the
+// jar. Host-scoped cookies such as OSID exist per Google service host, and a
+// jar rejects any cookie whose domain does not match the URL it is set with.
 func (m *Manager) installCookies(profile *store.Profile) {
-	u, _ := url.Parse(homeURL)
-	m.HTTPClient.Jar.SetCookies(u, profile.HTTPCookies())
+	byHost := map[string][]*http.Cookie{}
+	for _, cookie := range profile.HTTPCookies() {
+		host := strings.TrimPrefix(cookie.Domain, ".")
+		if host == "" {
+			host = "notebooklm.google.com"
+		}
+		byHost[host] = append(byHost[host], cookie)
+	}
+	for host, cookies := range byHost {
+		u, err := url.Parse("https://" + host + "/")
+		if err != nil {
+			continue
+		}
+		m.HTTPClient.Jar.SetCookies(u, cookies)
+	}
 }
 
 func browserProfileDir() (string, error) {
@@ -218,11 +241,17 @@ func isNotebookLMURL(raw string) bool {
 	if err != nil {
 		return false
 	}
-	return isAllowedHost(u.Hostname()) && u.Hostname() == "notebooklm.google.com"
+	return isNotebookLMHost(u.Hostname())
+}
+
+// Google serves NotebookLM from both the legacy notebooklm.google.com host and
+// the newer notebook.google.com host, and redirects between them once signed in.
+func isNotebookLMHost(host string) bool {
+	return host == "notebooklm.google.com" || host == "notebook.google.com"
 }
 
 func isAllowedHost(host string) bool {
-	return host == "notebooklm.google.com" || host == "accounts.google.com" || host == "myaccount.google.com" || host == "ssl.gstatic.com" || host == "www.gstatic.com"
+	return isNotebookLMHost(host) || host == "accounts.google.com" || host == "myaccount.google.com" || host == "ssl.gstatic.com" || host == "www.gstatic.com"
 }
 
 func ImportCookieHeader(profileStore *store.Store, header string) error {
@@ -256,7 +285,7 @@ func isAllowedCookieDomain(domain string) bool {
 	if strings.HasSuffix(domain, ".googleusercontent.com") {
 		return true
 	}
-	return domain == "notebooklm.google.com" || domain == ".notebooklm.google.com"
+	return isNotebookLMHost(strings.TrimPrefix(domain, "."))
 }
 
 func HasProfile(path string) bool {

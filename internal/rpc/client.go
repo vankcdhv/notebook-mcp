@@ -74,11 +74,14 @@ func (c *Client) callOnce(ctx context.Context, method string, params []any, sour
 	if sourcePath == "" {
 		sourcePath = "/"
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, BuildURL(BatchExecuteURL, method, sourcePath, tokens.SessionID), strings.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, BuildURL(BatchExecuteURL, method, sourcePath, tokens.SessionID, tokens.BuildLabel), strings.NewReader(body))
 	if err != nil {
 		return nil, 0, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
+	req.Header.Set("User-Agent", auth.UserAgent)
+	req.Header.Set("Origin", "https://notebooklm.google.com")
+	req.Header.Set("Referer", "https://notebooklm.google.com/")
 	res, err := httpClient.Do(req)
 	if err != nil {
 		return nil, 0, err
@@ -209,7 +212,7 @@ func (c *Client) askResponse(ctx context.Context, notebookID, question string, s
 		values.Set("at", tokens.CSRFToken)
 	}
 	query := url.Values{}
-	query.Set("bl", c.BL)
+	query.Set("bl", firstNonEmpty(tokens.BuildLabel, c.BL))
 	query.Set("hl", "en")
 	query.Set("_reqid", fmt.Sprintf("%d", c.ReqID.Add(100000)))
 	query.Set("rt", "c")
@@ -221,6 +224,9 @@ func (c *Client) askResponse(ctx context.Context, notebookID, question string, s
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
+	req.Header.Set("User-Agent", auth.UserAgent)
+	req.Header.Set("Origin", "https://notebooklm.google.com")
+	req.Header.Set("Referer", "https://notebooklm.google.com/")
 	res, err := httpClient.Do(req)
 	if err != nil {
 		return "", err
@@ -296,6 +302,15 @@ func defaultBL() string {
 		return value
 	}
 	return "boq_labs-tailwind-ui_20250520.08_p0"
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func newConversationID() string {

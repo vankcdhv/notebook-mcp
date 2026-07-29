@@ -21,3 +21,13 @@ func TestExtractTokensMissing(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+func TestExtractTokensBuildLabel(t *testing.T) {
+	tokens, err := ExtractTokens(`{"SNlM0e":"csrf-token","FdrFJe":"session-id","cfb2h":"boq_labs-tailwind-frontend_20260727.10_p0"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tokens.BuildLabel != "boq_labs-tailwind-frontend_20260727.10_p0" {
+		t.Fatalf("BuildLabel = %q", tokens.BuildLabel)
+	}
+}

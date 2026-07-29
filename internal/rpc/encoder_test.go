@@ -39,7 +39,7 @@ func TestBuildBody(t *testing.T) {
 }
 
 func TestBuildURL(t *testing.T) {
-	got := BuildURL("https://example.com/x", "wXbhsf", "/notebook/abc", "session-id")
+	got := BuildURL("https://example.com/x", "wXbhsf", "/notebook/abc", "session-id", "")
 	if !strings.Contains(got, "rpcids=wXbhsf") {
 		t.Fatalf("missing rpcids: %s", got)
 	}

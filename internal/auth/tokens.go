@@ -8,6 +8,8 @@ import (
 type Tokens struct {
 	CSRFToken string
 	SessionID string
+	// BuildLabel is the frontend build id ("bl") that batchexecute requires.
+	BuildLabel string
 }
 
 var (
@@ -19,6 +21,10 @@ var (
 		regexp.MustCompile(`"FdrFJe"\s*:\s*"([^"]+)"`),
 		regexp.MustCompile(`FdrFJe["']?\s*[,=:]\s*["']([^"']+)`),
 	}
+	buildLabelPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`"cfb2h"\s*:\s*"([^"]+)"`),
+		regexp.MustCompile(`cfb2h["']?\s*[,=:]\s*["']([^"']+)`),
+	}
 )
 
 func ExtractTokens(html string) (Tokens, error) {
@@ -27,7 +33,7 @@ func ExtractTokens(html string) (Tokens, error) {
 	if csrf == "" || session == "" {
 		return Tokens{}, errors.New("could not extract NotebookLM CSRF/session tokens")
 	}
-	return Tokens{CSRFToken: csrf, SessionID: session}, nil
+	return Tokens{CSRFToken: csrf, SessionID: session, BuildLabel: firstMatch(html, buildLabelPatterns)}, nil
 }
 
 func firstMatch(s string, patterns []*regexp.Regexp) string {

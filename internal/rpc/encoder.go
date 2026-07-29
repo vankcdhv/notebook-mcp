@@ -27,7 +27,7 @@ func BuildBody(request []any, csrfToken string) (string, error) {
 	return values.Encode() + "&", nil
 }
 
-func BuildURL(baseURL, method, sourcePath, sessionID string) string {
+func BuildURL(baseURL, method, sourcePath, sessionID, buildLabel string) string {
 	values := url.Values{}
 	values.Set("rpcids", method)
 	values.Set("source-path", sourcePath)
@@ -35,6 +35,9 @@ func BuildURL(baseURL, method, sourcePath, sessionID string) string {
 	values.Set("rt", "c")
 	if sessionID != "" {
 		values.Set("f.sid", sessionID)
+	}
+	if buildLabel != "" {
+		values.Set("bl", buildLabel)
 	}
 	return baseURL + "?" + values.Encode()
 }
