@@ -275,21 +275,37 @@ func (c *Client) ImportResearch(ctx context.Context, notebookID, taskID string, 
 	return out, nil
 }
 
+// resolveSourceIDs falls back to every source in the notebook when the caller
+// did not scope the question; asking with an empty list makes NotebookLM answer
+// as if the notebook had no sources at all.
+func (c *Client) resolveSourceIDs(ctx context.Context, notebookID string, sourceIDs []string) ([]string, error) {
+	if sourceIDs != nil {
+		return sourceIDs, nil
+	}
+	sources, err := c.ListSources(ctx, notebookID)
+	if err != nil {
+		return nil, err
+	}
+	for _, source := range sources {
+		sourceIDs = append(sourceIDs, source.ID)
+	}
+	return sourceIDs, nil
+}
+
 func (c *Client) Ask(ctx context.Context, notebookID, question string, sourceIDs []string, conversationID string) (AskResult, error) {
-	if sourceIDs == nil {
-		sources, err := c.ListSources(ctx, notebookID)
-		if err != nil {
-			return AskResult{}, err
-		}
-		for _, source := range sources {
-			sourceIDs = append(sourceIDs, source.ID)
-		}
+	sourceIDs, err := c.resolveSourceIDs(ctx, notebookID, sourceIDs)
+	if err != nil {
+		return AskResult{}, err
 	}
 	answer, convID, refs, err := c.RPC.Ask(ctx, notebookID, question, sourceIDs, conversationID)
 	return AskResult{Answer: answer, ConversationID: convID, References: convertRefs(refs)}, err
 }
 
 func (c *Client) AskStream(ctx context.Context, notebookID, question string, sourceIDs []string, conversationID string) (AskStreamResult, error) {
+	sourceIDs, err := c.resolveSourceIDs(ctx, notebookID, sourceIDs)
+	if err != nil {
+		return AskStreamResult{}, err
+	}
 	chunks, convID, refs, err := c.RPC.AskStream(ctx, notebookID, question, sourceIDs, conversationID)
 	if err != nil {
 		return AskStreamResult{}, err
