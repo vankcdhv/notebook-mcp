@@ -71,6 +71,24 @@ func TestCreateNoteCreatesThenUpdatesContent(t *testing.T) {
 	}
 }
 
+func TestDeleteSourceWrapsTheIDTwoLevelsDeep(t *testing.T) {
+	rpcClient := &recordingRPC{}
+	client := New(rpcClient)
+
+	if _, err := client.DeleteSource(context.Background(), "nb-id", "source-id"); err != nil {
+		t.Fatal(err)
+	}
+	if rpcClient.method != rpc.DeleteSource {
+		t.Fatalf("method = %q, want %q", rpcClient.method, rpc.DeleteSource)
+	}
+	// A third level of wrapping makes NotebookLM accept the call and delete nothing.
+	outer := rpcClient.params[0].([]any)
+	inner := outer[0].([]any)
+	if len(inner) != 1 || inner[0] != "source-id" {
+		t.Fatalf("delete payload = %#v, want the id two levels deep", rpcClient.params)
+	}
+}
+
 func TestStartResearchRejectsDeepDrive(t *testing.T) {
 	client := New(&recordingRPC{})
 

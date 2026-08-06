@@ -157,8 +157,10 @@ func (c *Client) AddFile(ctx context.Context, notebookID, filePath, mimeType str
 	return source, nil
 }
 
+// DeleteSource removes a source. The ID is wrapped two levels deep; wrapping it
+// any deeper makes NotebookLM accept the call and delete nothing.
 func (c *Client) DeleteSource(ctx context.Context, notebookID, sourceID string) (bool, error) {
-	_, err := c.RPC.Call(ctx, rpc.DeleteSource, []any{[]any{[]any{[]any{sourceID}}}}, "/notebook/"+notebookID, true)
+	_, err := c.RPC.Call(ctx, rpc.DeleteSource, []any{[]any{[]any{sourceID}}}, "/notebook/"+notebookID, true)
 	return err == nil, err
 }
 
