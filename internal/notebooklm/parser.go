@@ -68,16 +68,21 @@ func parseNote(data any) Note {
 	return Note{ID: asString(at(arr, 0)), Title: asString(at(arr, 4)), Content: asString(at(arr, 1))}
 }
 
-func parseResearchResult(data any) ResearchResult {
-	arr := asArray(data)
-	return ResearchResult{TaskID: asString(at(arr, 0)), Status: researchStatus(asInt(at(arr, 0))), Title: asString(at(arr, 1)), URL: asString(at(arr, 2))}
-}
+// Research task status codes. A task reports 1 while it is still working and
+// settles on one of several terminal codes once results exist: fast research
+// uses 2 before its results are imported and 6 afterwards, while deep research
+// also reports 5 and 7. Treat only the running codes as unfinished so deep
+// research is not reported as in progress forever.
+const (
+	researchQueued  = 0
+	researchRunning = 1
+)
 
 func researchStatus(code int) string {
-	if code == 2 || code == 6 {
-		return "completed"
+	if code == researchQueued || code == researchRunning {
+		return "in_progress"
 	}
-	return "in_progress"
+	return "completed"
 }
 
 func extractSourceURL(metadata []any) string {

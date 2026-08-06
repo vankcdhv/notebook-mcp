@@ -240,15 +240,19 @@ func (c *Client) StartResearch(ctx context.Context, notebookID, query, source, m
 	}
 	method := rpc.StartFastResearch
 	params := []any{[]any{query, sourceType}, nil, 1, notebookID}
+	// Deep research answers with the report ID first and the task ID second,
+	// while fast research leads with the task ID.
+	taskIndex := 0
 	if mode == "deep" {
 		method = rpc.StartDeepResearch
 		params = []any{nil, []any{1}, []any{query, sourceType}, 5, notebookID}
+		taskIndex = 1
 	}
 	result, err := c.RPC.Call(ctx, method, params, "/notebook/"+notebookID, true)
 	if err != nil {
 		return ResearchResult{}, err
 	}
-	return parseResearchResult(result), nil
+	return ResearchResult{TaskID: asString(at(asArray(result), taskIndex)), Status: researchStatus(researchRunning)}, nil
 }
 
 func (c *Client) PollResearch(ctx context.Context, notebookID string) ([]ResearchResult, error) {
@@ -257,7 +261,8 @@ func (c *Client) PollResearch(ctx context.Context, notebookID string) ([]Researc
 		return nil, err
 	}
 	// Payload is [[[taskID, task, ...], ...]] where task is
-	// [notebookID, [query, sourceType], _, [[[url, title, snippet], ...]], status].
+	// [notebookID, [query, sourceType], mode, [[[url, title, snippet], ...]], status]
+	// plus, for deep research, a trailing [reportID, reportBlob, ...] element.
 	tasks := asArray(result)
 	if len(tasks) > 0 {
 		tasks = asArray(tasks[0])
@@ -272,23 +277,56 @@ func (c *Client) PollResearch(ctx context.Context, notebookID string) ([]Researc
 			entry := asArray(found)
 			url := asString(at(entry, 0))
 			title := asString(at(entry, 1))
-			if url == "" && title == "" {
+			// Deep research lists its own report among the found entries with no
+			// URL. Importing that as a web source makes NotebookLM reject the
+			// whole batch, so skip it here and emit the report from data[5].
+			// A missing title is fine; NotebookLM derives one from the page.
+			if url == "" {
 				continue
 			}
-			items = append(items, ResearchResult{TaskID: taskID, Status: status, Title: title, URL: url})
+			items = append(items, ResearchResult{TaskID: taskID, Status: status, Title: title, URL: url, Type: "web"})
+		}
+		if report := researchReport(taskID, status, asArray(at(data, 5))); report.Content != "" {
+			items = append(items, report)
 		}
 	}
 	return items, nil
 }
 
+// researchReport turns the deep research report element into an importable
+// result. Content stays empty while the report is still being generated.
+func researchReport(taskID, status string, report []any) ResearchResult {
+	markdown := decodeResearchReport(asString(at(report, 1)))
+	if markdown == "" {
+		return ResearchResult{}
+	}
+	return ResearchResult{
+		TaskID:  taskID,
+		Status:  status,
+		Title:   reportTitle(markdown),
+		Type:    "report",
+		Content: markdown,
+	}
+}
+
+// ImportResearch turns research results into notebook sources. NotebookLM
+// rejects the entire batch when any entry is malformed, so results it cannot
+// encode are dropped rather than sent.
 func (c *Client) ImportResearch(ctx context.Context, notebookID, taskID string, sources []ResearchResult) ([]Source, error) {
 	entries := make([]any, 0, len(sources))
 	for _, source := range sources {
-		if source.Type == "report" {
-			entries = append(entries, []any{nil, []any{source.Title, source.URL}, nil, 3, nil, nil, nil, nil, nil, nil, 3})
-			continue
+		switch {
+		case source.Type == "report" || source.Content != "":
+			if source.Content == "" {
+				continue
+			}
+			entries = append(entries, []any{nil, []any{source.Title, source.Content}, nil, 3, nil, nil, nil, nil, nil, nil, 3})
+		case source.URL != "":
+			entries = append(entries, []any{nil, nil, []any{source.URL, source.Title}, nil, nil, nil, nil, nil, nil, nil, 2})
 		}
-		entries = append(entries, []any{nil, nil, []any{source.URL, source.Title}, nil, nil, nil, nil, nil, nil, nil, 2})
+	}
+	if len(entries) == 0 {
+		return nil, fmt.Errorf("no importable results in %d given: web results need a url, reports need content", len(sources))
 	}
 	result, err := c.RPC.Call(ctx, rpc.ImportResearchMethod, []any{nil, []any{1}, taskID, notebookID, entries}, "/notebook/"+notebookID, true)
 	if err != nil {

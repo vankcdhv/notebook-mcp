@@ -24,12 +24,16 @@ type Note struct {
 	Content string `json:"content,omitempty"`
 }
 
+// ResearchResult is one importable item a research task produced: either a web
+// page it consulted, or the report deep research generated. Report items carry
+// their markdown in Content and have no URL.
 type ResearchResult struct {
-	TaskID string `json:"task_id,omitempty"`
-	Status string `json:"status,omitempty"`
-	Title  string `json:"title,omitempty"`
-	URL    string `json:"url,omitempty"`
-	Type   string `json:"type,omitempty"`
+	TaskID  string `json:"task_id,omitempty"`
+	Status  string `json:"status,omitempty"`
+	Title   string `json:"title,omitempty"`
+	URL     string `json:"url,omitempty"`
+	Type    string `json:"type,omitempty"`
+	Content string `json:"content,omitempty"`
 }
 
 type ChatReference struct {

@@ -246,8 +246,14 @@ func NotebookLMTools(client NotebookLMClient) []Tool {
 				return nil, err
 			}
 			results := researchResultsArg(args["sources"])
+			if len(results) == 0 {
+				return nil, fmt.Errorf("sources is required: pass the research_poll results to import")
+			}
 			sources, err := client.ImportResearch(ctx, notebookID, taskID, results)
-			return map[string]any{"count": len(sources), "sources": sources}, err
+			if err != nil {
+				return nil, err
+			}
+			return map[string]any{"count": len(sources), "sources": sources}, nil
 		}},
 		{Name: "ask", Description: "Ask NotebookLM a blocking chat question", InputSchema: ObjectSchema([]string{"notebook_id", "question"}, map[string]any{"notebook_id": StringProp("Notebook ID"), "question": StringProp("Question"), "conversation_id": StringProp("Conversation ID for follow-up"), "source_ids": map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Optional source IDs to scope the question"}}), Handler: func(ctx context.Context, args map[string]any) (any, error) {
 			notebookID, err := requireString(args, "notebook_id")
@@ -352,8 +358,8 @@ func researchResultsArg(value any) []notebooklm.ResearchResult {
 		if s, ok := obj["type"].(string); ok {
 			result.Type = s
 		}
-		if s, ok := obj["content"].(string); ok && result.URL == "" {
-			result.URL = s
+		if s, ok := obj["content"].(string); ok {
+			result.Content = s
 		}
 		out = append(out, result)
 	}

@@ -14,6 +14,7 @@ type fakeNotebookLMClient struct {
 	summaryErr              error
 	lastMethod              string
 	lastImportedResearchLen int
+	lastImportedResearch    []notebooklm.ResearchResult
 }
 
 func (f fakeNotebookLMClient) ListNotebooks(context.Context) ([]notebooklm.Notebook, error) {
@@ -72,6 +73,7 @@ func (f fakeNotebookLMClient) PollResearch(context.Context, string) ([]notebookl
 }
 func (f *fakeNotebookLMClient) ImportResearch(ctx context.Context, notebookID, taskID string, sources []notebooklm.ResearchResult) ([]notebooklm.Source, error) {
 	f.lastImportedResearchLen = len(sources)
+	f.lastImportedResearch = sources
 	return []notebooklm.Source{{ID: "imported"}}, nil
 }
 func (f fakeNotebookLMClient) Ask(context.Context, string, string, []string, string) (notebooklm.AskResult, error) {
@@ -176,6 +178,44 @@ func TestResearchImportParsesSourcesArgument(t *testing.T) {
 	}
 	if client.lastImportedResearchLen != 2 {
 		t.Fatalf("imported research len = %d, want 2", client.lastImportedResearchLen)
+	}
+}
+
+func TestResearchImportKeepsReportContentSeparateFromURL(t *testing.T) {
+	client := &fakeNotebookLMClient{}
+	tools := NotebookLMTools(client)
+	tool := findTool(t, tools, "research_import")
+
+	_, err := tool.Handler(context.Background(), map[string]any{
+		"notebook_id": "nb-id",
+		"task_id":     "task-id",
+		"sources": []any{
+			map[string]any{"title": "Report", "content": "# Report", "type": "report"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Handler returned error: %v", err)
+	}
+	imported := client.lastImportedResearch[0]
+	if imported.Content != "# Report" {
+		t.Fatalf("content = %q", imported.Content)
+	}
+	if imported.URL != "" {
+		t.Fatalf("report content leaked into url: %q", imported.URL)
+	}
+}
+
+func TestResearchImportRequiresSources(t *testing.T) {
+	client := &fakeNotebookLMClient{}
+	tools := NotebookLMTools(client)
+	tool := findTool(t, tools, "research_import")
+
+	_, err := tool.Handler(context.Background(), map[string]any{
+		"notebook_id": "nb-id",
+		"task_id":     "task-id",
+	})
+	if err == nil {
+		t.Fatal("Handler reported success without anything to import")
 	}
 }
 

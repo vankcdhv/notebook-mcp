@@ -86,7 +86,7 @@ func TestImportResearchBuildsWebAndReportEntries(t *testing.T) {
 
 	_, err := client.ImportResearch(context.Background(), "nb-id", "task-id", []ResearchResult{
 		{Title: "Article", URL: "https://example.com/a", Type: "web"},
-		{Title: "Report", URL: "# Report", Type: "report"},
+		{Title: "Report", Content: "# Report", Type: "report"},
 	})
 	if err != nil {
 		t.Fatal(err)
